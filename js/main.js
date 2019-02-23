@@ -1,0 +1,3 @@
+(function () {
+    Engine.run();
+})();
