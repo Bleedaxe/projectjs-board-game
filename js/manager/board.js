@@ -23,8 +23,6 @@ const BoardManager = (function () {
         for(let row = CONSTANTS.board.secondPlayerCastleStartRow; row < CONSTANTS.board.rowCount; row++){
             fillRow(row, CONSTANTS.board.cell.type.playerTwo);
         }
-
-        return Board;
     }
 
     const getBarriers = function () {
@@ -46,6 +44,11 @@ const BoardManager = (function () {
         createBarriers();
         getBarriers()
             .forEach(b => appendCol(b.col, b.row, CONSTANTS.board.cell.type.barrier));
+    }
+
+    const removeBarrier = function (row, col) {
+        barriers = barriers.filter(b => b.row !== row && b.col !== col);
+        Board[row][col] = CONSTANTS.board.cell.type.empty;
     }
 
     const showAvailableMovement = function (unit) {

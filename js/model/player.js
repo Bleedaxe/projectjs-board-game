@@ -13,7 +13,7 @@ Player.prototype.getUnplacedUnits = function () {
         .filter(u => u.x === null && u.y === null);
 }
 
-Player.prototype.aliveUnits = function () {
+Player.prototype.getAliveUnits = function () {
     return this.units
-        .filter(u => u.health > 0);
+        .filter(u => u.isAlive());
 }

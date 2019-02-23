@@ -90,5 +90,8 @@ const CONSTANTS = {
         move: 'Move',
         heal: 'Heal'
     },
-    
+    view: {
+        pickUnitId: 'units',
+        turnTypeId: 'turns',
+    }
 }

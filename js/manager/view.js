@@ -47,6 +47,7 @@ const ViewManager = (function () {
                     CanvasManager.renderRect(x, y, CONSTANTS.board.cell.width, CONSTANTS.board.cell.height, getRectColor(boardValue, row, col), CONSTANTS.board.cell.lineWidth);
                 }
                 else {
+                    //Add to constants
                     CanvasManager.renderRect(x, y, CONSTANTS.board.cell.width, CONSTANTS.board.cell.height, 'red', CONSTANTS.board.cell.lineWidth, "X", "black");
                 }
             }
@@ -70,21 +71,34 @@ const ViewManager = (function () {
         //createPlayerTurnMessage(getInfo());
     }
 
-    const renderPick = function (avaibleUnits, boardType, callback) {
+    const renderUnitPick = function (avaibleUnits, boardType, callback) {
         showAvaiblePlace(boardType);
         unitManager.showUnits(avaibleUnits, callback);
     }
 
-    const onBoardClick =  function (unit, callback) {
+    // const onBoardClick =  function (unit, callback, afterAddingEvent) {
+    //     const canvasClick = function (click) {
+    //         click.x = Math.floor(click.x / CONSTANTS.board.cell.width);
+    //         click.y = Math.floor(click.y / CONSTANTS.board.cell.height);
+    //         afterAddingEvent();
+    //         callback(click, unit);
+    //     }
+
+    //     CanvasManager.onClick(canvasClick);
+    // }
+    const onBoardClick =  function (callback, afterAddingEvent = null) {
         const canvasClick = function (click) {
             click.x = Math.floor(click.x / CONSTANTS.board.cell.width);
             click.y = Math.floor(click.y / CONSTANTS.board.cell.height);
-            callback(click, unit);
+
+            if(afterAddingEvent !== null)
+                afterAddingEvent();
+
+            callback(click);
         }
 
         CanvasManager.onClick(canvasClick);
     }
-
     const unitManager = (function () {
         const showUnits = function (avaibleUnits, callback) {
             const unitDomElementId = 'units';
@@ -96,17 +110,15 @@ const ViewManager = (function () {
                     unitElements.parentNode.removeChild(unitElements);
                 }
             }
-            const isUnitDomElementAvailable = function () {
-                return document.getElementById(unitDomElementId);
-            }
             const unitToDiv = function (unit) {
+                const afterBoardClick = function (click) {
+                    callback(click, unit);
+                }
                 const onUnitPick = function () {
                     alert('place unit');
                     deleteDiv();
-                    if (isUnitDomElementAvailable) {
-                        onBoardClick(unit, callback, deleteDiv);
-                        return;
-                    }
+                    onBoardClick(afterBoardClick);
+                    return;
                 }
 
                 let unitElement = document.createElement('div');
@@ -123,14 +135,75 @@ const ViewManager = (function () {
             
             document.body.appendChild(unitElements);
         }
+        
+        const pickUnit = function (units, callback) {
+            const afterBoardClick = function (click) {
+                const clickedUnits = units.filter(u => u.x === click.x && u.y === click.y);
+                if (clickedUnits.length === 0) {
+                    onBoardClick(afterBoardClick);
+                    return;
+                }
+
+                callback(clickedUnits[0]);
+            }
+            onBoardClick(afterBoardClick);
+        }
+
         return {
             showUnits,
-            renderPick
+            pickUnit
         }
     })();
 
     const showAvaiblePlace = function (boardType) {
         renderBoard(boardType);
+    }
+
+    const renderTurn = function (turns) {
+        const turnToDiv = function (turn) {
+            const onClick = function () {
+                onBoardClick(turn.callback);
+            }
+            //turn will have name and callback function
+            const turnDOM = document.createElement('div');
+            turnDOM.textContent = turn.name;
+
+            if (turn.callback === null) {
+                turnDOM.addEventListener('click', onClick);
+            }
+            else {
+                turn.textContent += " X";
+            }
+
+            return turnDOM;
+        }
+        const showTurns = function () {
+            const turnTypesDOMElement = document.createElement('div');
+            turnTypesDOMElement.id = CONSTANTS.view.turnTypeId;
+
+            turns
+                .map(turnToDiv)
+                .forEach(t => turnTypesDOMElement.appendChild(t));
+
+            document.body.appendChild(turnTypesDOMElement);
+        }
+
+        showTurns();
+    }
+
+    const pickAttackableUnit = function (attackableUnits, callback) {
+        const afterClick = function (click) {
+            const clickedUnits = attackableUnits
+                .filter(u => u.row === click.y && u.col === click.x);
+            
+            if (clickedUnits.length !== 0) {
+                callback(clickedEnemyUnits[0]);
+            }
+
+            onBoardClick(afterClick);
+        }
+
+        onBoardClick(afterClick);
     }
 
     init();
@@ -139,7 +212,9 @@ const ViewManager = (function () {
         renderBoard,
         onBoardClick,
         showAvaiblePlace,
-        showUnits: unitManager.showUnits,
-        renderPick: unitManager.renderPick
+        renderPick: renderUnitPick,
+        pickUnit: unitManager.pickUnit,
+        renderTurn,
+        pickAttackableUnit
     }
 })();
