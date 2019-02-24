@@ -11,17 +11,17 @@ const CanvasManager = (function () {
         context = canvas.getContext('2d');
     }
 
-    const renderRect = function (x, y, width, height, color, lineWidth, text = null, textColor = null) {
+    const renderRect = function (x, y, width, height, color, lineWidth, text = null) {
         context.beginPath();
         context.rect(x, y, width, height);
         context.lineWidth = lineWidth;
         context.stroke();
         context.fillStyle = color;
         context.fill();
-        if(text) {
-            context.fillStyle = textColor;
+        if(text !== null) {
+            context.fillStyle = text.color;
             context.font = "50px Arial";
-            context.fillText(text, x + 30, y + 70);
+            context.fillText(text.value, x + 30, y + 70);
         }
     }
 

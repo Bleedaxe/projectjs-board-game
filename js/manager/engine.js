@@ -6,7 +6,7 @@ const Engine = (function () {
                 action();
             }
         }
-        addUnits(() => units.push(new Knight()));
+        //addUnits(() => units.push(new Knight()));
         addUnits(() => units.push(new Elf()));
         addUnits(() => units.push(new Dwarf()));
         return units;
@@ -32,15 +32,15 @@ const Engine = (function () {
                 .filter(availableForAttackUnits)
                 .map(toCell);
 
-            BoardManager.getBarriers()
-                .filter(availableForAttackUnits)
-                .forEach(b => attackableUnits.push(b));
+            attackableUnits
+                .concat(BoardManager.getBarriers()
+                    .filter(availableForAttackUnits));
 
             return attackableUnits;
         }
                     
         const isAttackAvailable = function (unit, enemyPlayer) {
-            return getAttackableUnits(unit, enemyPlayer) !== 0;
+            return getAttackableUnits(unit, enemyPlayer).length !== 0;
         }
 
         const isUnitNotOnFullHealth = function (unit) {
@@ -66,13 +66,25 @@ const Engine = (function () {
                 const attackableUnits = getAttackableUnits(unit, enemyPlayer);
                 ViewManager.pickAttackableUnit(attackableUnits, afterUnitPicking)
             }
-            const move = function () {
+            const move = function (afterSuccess) {
+                const filter = function (click) {
+                    const row = click.y;
+                    const col = click.x;
+                    const boardValue = Board[row][col];
+
+                    return +boardValue == boardValue;
+                }
+                const changeUnitPosition = function (click) {
+                    afterSuccess();
+                    unit.move(click.x, click.y);
+                    BoardManager.createBoard(unitManger.getUnits());
+                    ViewManager.renderBoard();
+                    otherPlayerTurn();
+                }
+
                 BoardManager.showAvailableMovement(unit);
                 ViewManager.renderBoard();
-                //view manager pick cell with number on it
-                //change unit position (on board and unit coordinates)
-                //render board
-                //change to enemy turn
+                ViewManager.onBoardClick(changeUnitPosition, filter);
             }
             //TODO: check if heal is max -> if it is don't enable healing.
             const heal = function () {
@@ -82,12 +94,12 @@ const Engine = (function () {
                 //if yes give one more turn
                 //else change to enemy turn
             }
+            const result = {};
+            result.attack = isAttackAvailable(unit, enemyPlayer) ? attack : null;
+            result.move = move;
+            result.heal = isUnitNotOnFullHealth(unit) ? heal : null;
 
-            return {
-                attack: isAttackAvailable(unit, enemyPlayer) ? attack : null,
-                move,
-                heal: isUnitNotOnFullHealth(unit) ? heal : null
-            }
+            return result;
         }
 
         const makeTurn = function (current, enemy) {
@@ -98,16 +110,17 @@ const Engine = (function () {
             }
 
             const showAvailableTurns = function (unit) {
+                const samePlayerTurn = () => makeTurn(current, enemy);
+                const otherPlayerTurn = () => makeTurn(enemy, current);
+                const moves = getMoves(unit, enemy, samePlayerTurn, otherPlayerTurn);
+
                 const moveToObject = function (moveType) {
                     return {
                         name: moveType,
                         callback: moves[moveType]
                     };
                 }
-
-                const samePlayerTurn = () => makeTurn(current, enemy);
-                const otherPlayerTurn = () => makeTurn(enemy, current);
-                const moves = getMoves(unit, enemy, samePlayerTurn, otherPlayerTurn);
+                
                 const turnTypes = Object.keys(moves)
                     .map(moveToObject);
 
@@ -115,40 +128,62 @@ const Engine = (function () {
             }
 
             ViewManager.pickUnit(aliveUnits, showAvailableTurns);
-            //ViewManager.pickMove(current, aliveUnits, isAttackAvailable, callback);
         }
+        ViewManager.renderBoard();
         makeTurn(playerOne, playerTwo);
     }
     const placeAllUnits = function (playerOne, playerТwo) {
         const makeTurn = function (current, other) {
             const availableUnits = current.getUnplacedUnits();
+            const placeUnitFilter = function (click) {
+                const row = click.y;
+                const col = click.x;
+                return Board[row][col] === current.boardSide;
+            }
             const callback = function (place, unit) {
-                let succeed = BoardManager.tryAddUnit(place, unit, current.boardSide);
-                if (!succeed) {
-                    makeTurn(current, other);
+                BoardManager.placeUnit(place, unit);
+                // if (!succeed) {
+                //     makeTurn(current, other);
+                //     return;
+                // }
+                if (other.getUnplacedUnits().length === 0) {
+                    play(playerOne, playerТwo);
                     return;
-                }
-                if (other.getUnplacedUnits() === 0) {
-                    play()
                 }
 
                 makeTurn(other, current);
             }
             
-            ViewManager.renderPick(availableUnits, current.boardSide, callback);
+            ViewManager.renderPick(availableUnits, current.boardSide, callback, placeUnitFilter);
         }
         makeTurn(playerOne, playerТwo);
     }
     const run = function (){
         //Show message for starting the game (alert probably)
         BoardManager.createBoard();
-        BoardManager.addBarriers();
         ViewManager.renderBoard();
         const playerOne = new Player('player one', createUnits(), CONSTANTS.board.cell.type.playerOne);
         const playerТwo = new Player('player two', createUnits(), CONSTANTS.board.cell.type.playerTwo);
+        unitManger.setPlayers(playerOne, playerТwo);
         placeAllUnits(playerOne, playerТwo);
-        play(playerOne, playerТwo);
     }
+
+    const unitManger = (function () {
+        let playerOne = null;
+        let playerTwo = null;
+        const setPlayers = function (playerOneParam, playerTwoParam) {
+            playerOne = playerOneParam;
+            playerTwo = playerTwoParam;
+        }
+        const getUnits = function () {
+            return playerOne.getAliveUnits()
+                .concat(playerTwo.getAliveUnits());
+        }
+        return {
+            setPlayers,
+            getUnits
+        }
+    })();
 
     return {
         run
