@@ -1,4 +1,4 @@
-let Unit = function (attack, armor, health, attackCells, speed) {
+let Unit = function (attack, armor, health, attackCells, speed, ignorableCells = null) {
     maxHealth = health;
     this.getMaxHealth = function () {
         return maxHealth;
@@ -12,6 +12,12 @@ let Unit = function (attack, armor, health, attackCells, speed) {
 
     this.x = null;
     this.y = null;
+
+    this.ignorableCells = Object.keys(CONSTANTS.board.cell.type.units)
+        .map(k => CONSTANTS.board.cell.type.units[k]);
+    if(ignorableCells !== null){
+        this.ignorableCells = this.ignorableCells.concat(ignorableCells);
+    }
 
     this.receiveDamage = (attackDamage) => {
         this.health -= (attackDamage - this.armor);

@@ -16,11 +16,15 @@ const Engine = (function () {
     }
     const play = function (playerOne, playerTwo) {
         const getAttackableUnits = function (unit, enemyPlayer) {
-            const currentUnitPositionSum = unit.x + unit.y;
+            var attackableCells = BoardManager.getAttackablePlaces(unit, unit.ignorableCells);
             const availableForAttackUnits = function (unit) {
-                const enemyUnitPositionSum = unit.x + unit.y;
-                return Math.abs(enemyUnitPositionSum - currentUnitPositionSum) === unit.attackCells;
+                const enemyRow = unit.row;
+                const enemyCol = unit.col;
+
+                return attackableCells
+                    .filter(ac => ac.row === enemyRow && ac.col === enemyCol).length !== 0;
             }
+
             const toCell = function (unit) {
                 return {
                     row: unit.y,
@@ -28,14 +32,15 @@ const Engine = (function () {
                 };
             }
 
-            const attackableUnits = enemyPlayer.getAliveUnits()
-                .filter(availableForAttackUnits)
-                .map(toCell);
+            let attackableUnits = enemyPlayer.getAliveUnits()
+                .map(toCell)
+                .filter(availableForAttackUnits);
+            debugger;
+            const barriers = BoardManager.getBarriers()
+                .filter(availableForAttackUnits);
 
-            attackableUnits
-                .concat(BoardManager.getBarriers()
-                    .filter(availableForAttackUnits));
-
+            attackableUnits = attackableUnits.concat(barriers);
+            debugger;
             return attackableUnits;
         }
                     
@@ -48,23 +53,37 @@ const Engine = (function () {
             return true;
         }
 
-        const getMoves = function (unit, enemyPlayer, samePlayerTurn, otherPlayerTurn) {
-            const attack = function () {
-                const afterUnitPicking = function (pickedUnit) {
+        const getMoves = function (unit, enemyPlayer, samePlayerTurn, otherPlayerTurn) {     
+            const attack = function (afterSuccess) {
+                const attackableUnits = getAttackableUnits(unit, enemyPlayer);
+
+                const getAttackableUnitAtPosition = function (row, col) {
+                    const units = attackableUnits
+                        .filter(au => au.row === row &&  au.col === col);
+                    
+                    return units.length === 0 ? null : units[0];
+                }
+
+                const afterUnitPicking = function (click) {
+                    afterSuccess();
                     const pickedEnemyUnit = enemyPlayer.getAliveUnits()
-                        .filter(u => u.x === pickedUnit.col && u.y === pickedUnit.col);
+                        .filter(u => u.x === click.x && u.y === click.y);
+
                     if (pickedEnemyUnit.length !== 0) {
                         pickedEnemyUnit[0].receiveDamage(unit.attack);
                     }
                     else {
-                        BoardManager.removeBarrier(pickedUnit.row, pickedUnit.col);
-                        ViewManager.renderBoard();
+                        BoardManager.removeBarrier(click.y, click.x);
                     }
 
                     otherPlayerTurn();
                 }
-                const attackableUnits = getAttackableUnits(unit, enemyPlayer);
-                ViewManager.pickAttackableUnit(attackableUnits, afterUnitPicking)
+
+                const filter = function (click) {
+                    return getAttackableUnitAtPosition(click.y, click.x) !== null;
+                }
+
+                ViewManager.onBoardClick(afterUnitPicking, filter);
             }
             const move = function (afterSuccess) {
                 const filter = function (click) {
@@ -77,12 +96,13 @@ const Engine = (function () {
                 const changeUnitPosition = function (click) {
                     afterSuccess();
                     unit.move(click.x, click.y);
-                    BoardManager.createBoard(unitManger.getUnits());
-                    ViewManager.renderBoard();
                     otherPlayerTurn();
                 }
+                const unitRow = unit.y;
+                const unitCol = unit.x;
+                const blocksCount = unit.speed;
 
-                BoardManager.showAvailableMovement(unit);
+                BoardManager.showAvailableMovement(unitRow, unitCol, blocksCount);
                 ViewManager.renderBoard();
                 ViewManager.onBoardClick(changeUnitPosition, filter);
             }
@@ -126,7 +146,8 @@ const Engine = (function () {
 
                 ViewManager.renderTurn(turnTypes);
             }
-
+            BoardManager.createBoard(unitManger.getUnits());
+            ViewManager.renderBoard();
             ViewManager.pickUnit(aliveUnits, showAvailableTurns);
         }
         ViewManager.renderBoard();

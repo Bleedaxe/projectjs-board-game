@@ -1,5 +1,5 @@
 const BoardManager = (function () {
-    const barriers = [];
+    let barriers = [];
 
     const appendCol = function (col, row, value) {
         Board[row][col] = value;
@@ -65,27 +65,32 @@ const BoardManager = (function () {
     }
 
     const removeBarrier = function (row, col) {
-        barriers = barriers.filter(b => b.row !== row && b.col !== col);
+        barriers = barriers.filter(b => b.row !== row || b.col !== col);
         Board[row][col] = CONSTANTS.board.cell.type.empty;
     }
 
-    const showAvailableMovement = function (unit) {
-        const unitRow = unit.y;
-        const unitCol = unit.x;
-        const blocksCount = unit.speed;
+    const isOutOfBoard = function (row, col) {
+        return row < 0 ||
+               row >= Board.length ||
+               col < 0 ||
+               col >= Board[row].length
+    }
+
+    const getNotEmptyCells = function (ignorableCells = null) {
+        let cells = [CONSTANTS.board.cell.type.barrier].concat(
+            Object.keys(CONSTANTS.board.cell.type.units)                
+                .map(key => CONSTANTS.board.cell.type.units[key]));
+
+        if (ignorableCells !== null) {
+            cells = cells.filter(c => ignorableCells.indexOf(c) === -1);
+        }
+
+        return cells;
+    }
+
+    const showAvailableMovement = function (unitRow, unitCol, blocksCount, ignorableCells = null, allowMaxRangeIgnore = false) {
+        const notEmptyCells = getNotEmptyCells(ignorableCells);
         const changeBoard = function (row, col, index) {
-            const isOutOfBoard = function (row, col) {
-                return row < 0 ||
-                       row >= Board.length ||
-                       col < 0 ||
-                       col >= Board[row].length
-            }
-            const getNotEmptyCells = function () {
-                const cells = [CONSTANTS.board.cell.type.barrier];
-                Object.keys(CONSTANTS.board.cell.type.units)
-                    .forEach(key => cells.push(CONSTANTS.board.cell.type.units[key]));
-                return cells;
-            }
             const replaceWithIndexIfEmpty = function (row, col, index) {
                 if (isOutOfBoard(row, col)){
                     return;
@@ -93,10 +98,9 @@ const BoardManager = (function () {
                 const currentValue = Board[row][col];
                 if(+currentValue == currentValue) {
                     return;
-                }
-                const notEmptyCells = getNotEmptyCells();               
+                }                              
                 const cell = Board[row][col];
-                if (notEmptyCells.indexOf(cell) === -1){
+                if ((allowMaxRangeIgnore && index === blocksCount) || notEmptyCells.indexOf(cell) === -1){
                     Board[row][col] = index;
                 }
             }
@@ -135,6 +139,39 @@ const BoardManager = (function () {
         Board[unitRow][unitCol] = boardValue;
     }
 
+    const getCellsWithGivenValue = function (value) {
+        const cells = [];
+        for(let row = 0; row < Board.length; row++) {
+            for (let col = 0; col < Board[row].length; col++) {
+                if (Board[row][col] == value) {
+                    cells.push({
+                        row,
+                        col
+                    });
+                }
+            }
+        }
+
+        return cells;
+    }
+
+    const getCopyOfBoard = function () {
+        const copy = [];
+            Board.forEach(row => copy.push(row.slice(0)));
+        return copy;
+    }
+
+    const getAttackablePlaces = function (unit, ignorableCells) {
+        const unitRow = unit.y;
+        const unitCol = unit.x;
+        const blocksCount = unit.attackCells;
+        const currentBoard = getCopyOfBoard();
+        showAvailableMovement(unitRow, unitCol, blocksCount, ignorableCells, true);
+        const cells = getCellsWithGivenValue(blocksCount);
+        Board = currentBoard;
+        return cells;
+    }
+
     const placeUnit = function (place, unit) {
         const row = place.y;
         const col = place.x;
@@ -151,6 +188,7 @@ const BoardManager = (function () {
         showAvailableMovement,
         getBarriers,
         placeUnit,
-        removeBarrier
+        removeBarrier,
+        getAttackablePlaces
     }
 })();
