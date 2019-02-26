@@ -7,7 +7,8 @@ const CONSTANTS = {
         cell: {
             width: 100,
             height: 100,
-            lineWidth: 1,
+            lineWidth: 5,
+            borderColor: 'black',
             type: {
                 playerOne: 'p1',
                 playerTwo: 'p2',
@@ -26,7 +27,7 @@ const CONSTANTS = {
             unit: 'white'
         },
         battlefield: {
-            color: '#b3b3b3',
+            color: 'orange',
             startRow: 2,
             endRow: 5
         },
@@ -93,5 +94,9 @@ const CONSTANTS = {
     view: {
         pickUnitId: 'units',
         turnTypeId: 'turns',
+    },
+    heal: {
+        max: 6,
+        min: 1
     }
 }

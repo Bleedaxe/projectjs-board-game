@@ -11,10 +11,11 @@ const CanvasManager = (function () {
         context = canvas.getContext('2d');
     }
 
-    const renderRect = function (x, y, width, height, color, lineWidth, text = null) {
+    const renderRect = function (x, y, width, height, color, lineWidth, text = null, borderColor = null) {
         context.beginPath();
         context.rect(x, y, width, height);
         context.lineWidth = lineWidth;
+        context.strokeStyle = borderColor !== null ? borderColor : CONSTANTS.board.cell.borderColor;
         context.stroke();
         context.fillStyle = color;
         context.fill();

@@ -1,5 +1,5 @@
 let Unit = function (attack, armor, health, attackCells, speed, ignorableCells = null) {
-    maxHealth = health;
+    const maxHealth = health;
     this.getMaxHealth = function () {
         return maxHealth;
     }
@@ -37,7 +37,10 @@ let Unit = function (attack, armor, health, attackCells, speed, ignorableCells =
     }
 
     this.heal = (points) => {
+        debugger;
+        const healthBeforeHeal = this.health;
         this.health += points;
         this.health = this.getMaxHealth() < this.health ? this.getMaxHealth() : this.health;
+        return this.health - healthBeforeHeal;
     }
 }

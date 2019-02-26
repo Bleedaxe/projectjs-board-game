@@ -35,12 +35,12 @@ const Engine = (function () {
             let attackableUnits = enemyPlayer.getAliveUnits()
                 .map(toCell)
                 .filter(availableForAttackUnits);
-            debugger;
+
             const barriers = BoardManager.getBarriers()
                 .filter(availableForAttackUnits);
 
             attackableUnits = attackableUnits.concat(barriers);
-            debugger;
+
             return attackableUnits;
         }
                     
@@ -49,12 +49,13 @@ const Engine = (function () {
         }
 
         const isUnitNotOnFullHealth = function (unit) {
-            //TODO: check in constants for given type and compare with current health
-            return true;
+            return unit.getMaxHealth() !== unit.health;
         }
 
         const getMoves = function (unit, enemyPlayer, samePlayerTurn, otherPlayerTurn) {     
             const attack = function (afterSuccess) {
+                BoardManager.createBoard(unitManger.getUnits());
+                ViewManager.renderBoard();
                 const attackableUnits = getAttackableUnits(unit, enemyPlayer);
 
                 const getAttackableUnitAtPosition = function (row, col) {
@@ -83,6 +84,7 @@ const Engine = (function () {
                     return getAttackableUnitAtPosition(click.y, click.x) !== null;
                 }
 
+                ViewManager.renderAttackableTargets(attackableUnits);
                 ViewManager.onBoardClick(afterUnitPicking, filter);
             }
             const move = function (afterSuccess) {
@@ -106,13 +108,22 @@ const Engine = (function () {
                 ViewManager.renderBoard();
                 ViewManager.onBoardClick(changeUnitPosition, filter);
             }
-            //TODO: check if heal is max -> if it is don't enable healing.
-            const heal = function () {
-                //get random number for healing unit (don't heal for more than max heal)
-                //heal unit
-                //throw dice and check if this unit has one more turn (should player can have more than one bonus rounds)
-                //if yes give one more turn
-                //else change to enemy turn
+
+            const heal = function (afterSuccess) {
+                const isSamePlayerTurn = function () {
+                    return Random.getRandom(0, 1) === 0;
+                }
+
+                const recoveryPoints = Random.getRandom(CONSTANTS.heal.max, CONSTANTS.heal.min);
+                const healedPoints = unit.heal(recoveryPoints);
+                console.log(healedPoints);
+                afterSuccess(unit.type, healedPoints);
+                if (isSamePlayerTurn()) {
+                    samePlayerTurn();
+                }
+                else {
+                    otherPlayerTurn();
+                }
             }
             const result = {};
             result.attack = isAttackAvailable(unit, enemyPlayer) ? attack : null;
@@ -148,6 +159,7 @@ const Engine = (function () {
             }
             BoardManager.createBoard(unitManger.getUnits());
             ViewManager.renderBoard();
+            ViewManager.showCurrentPlayerName(current.name);
             ViewManager.pickUnit(aliveUnits, showAvailableTurns);
         }
         ViewManager.renderBoard();
@@ -163,10 +175,6 @@ const Engine = (function () {
             }
             const callback = function (place, unit) {
                 BoardManager.placeUnit(place, unit);
-                // if (!succeed) {
-                //     makeTurn(current, other);
-                //     return;
-                // }
                 if (other.getUnplacedUnits().length === 0) {
                     play(playerOne, playerТwo);
                     return;
@@ -174,7 +182,7 @@ const Engine = (function () {
 
                 makeTurn(other, current);
             }
-            
+            ViewManager.showCurrentPlayerName(current.name);
             ViewManager.renderPick(availableUnits, current.boardSide, callback, placeUnitFilter);
         }
         makeTurn(playerOne, playerТwo);

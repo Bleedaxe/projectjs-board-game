@@ -1,4 +1,7 @@
 const ViewManager = (function () {
+    const getElementsDOM = function () {
+        return document.getElementById('elements');
+    }
     const colorManager = (function () {
         const getPlayerColor =  function (row, col) {
             const isBlack = (row + col) % 2 !== 0;
@@ -55,7 +58,6 @@ const ViewManager = (function () {
     }
 
     const renderBoard = function (filterType = null) {
-        //TODO: add text in rect
         for(let row = 0; row < Board.length; row++) {
             for(let col = 0; col < Board[row].length; col++) {
                 const x = col * CONSTANTS.board.cell.width;
@@ -90,9 +92,14 @@ const ViewManager = (function () {
     
     const init = function () {
         createCanvas(CONSTANTS.canvas.board.id, CONSTANTS.canvas.board.width, CONSTANTS.canvas.board.height, CONSTANTS.canvas.board.border, document.body);
+        const elementsDOM = document.createElement('div');
+        elementsDOM.id = 'elements';
+        document.body.appendChild(elementsDOM);
     }
 
     const onBoardClick =  function (callback, filter = null) {
+        let allCallbacks = [];
+        allCallbacks.push(callback);
         const canvasClick = function (click) {
             click.x = Math.floor(click.x / CONSTANTS.board.cell.width);
             click.y = Math.floor(click.y / CONSTANTS.board.cell.height);
@@ -100,11 +107,14 @@ const ViewManager = (function () {
                 onBoardClick(callback, filter);
                 return;
             }
-
-            callback(click);
+            const lastCallback = allCallbacks.pop();
+            allCallbacks = [];
+            lastCallback(click);
         }
         CanvasManager.onClick(canvasClick);
-    }
+        
+    };
+    
 
     const renderUnitPick = function (avaibleUnits, boardType, callback, filter) {
         showAvaiblePlace(boardType);
@@ -142,7 +152,7 @@ const ViewManager = (function () {
 
                 let unitElement = document.createElement('div');
                 unitElement.textContent = unit.type[0].toUpperCase();
-                unitElement.id = unit.type;
+                unitElement.classList.add('unit');
 
                 unitElement.addEventListener('click', onUnitPick)
 
@@ -152,7 +162,7 @@ const ViewManager = (function () {
                 .map(unitToDiv)
                 .forEach(u => unitElements.appendChild(u));
             
-            document.body.appendChild(unitElements);
+            getElementsDOM().appendChild(unitElements);
         }
         
         const pickUnit = function (units, callback) {
@@ -162,10 +172,6 @@ const ViewManager = (function () {
             }
             const afterBoardClick = function (click) {
                 const clickedUnits = units.filter(u => u.x === click.x && u.y === click.y);
-                // if (clickedUnits.length === 0) {
-                //     onBoardClick(afterBoardClick);
-                //     return;
-                // }
 
                 callback(clickedUnits[0]);
             }
@@ -194,6 +200,7 @@ const ViewManager = (function () {
             }
             const turnDOM = document.createElement('div');
             turnDOM.textContent = turn.name;
+            turnDOM.classList.add('turn');
 
             if (turn.callback !== null) {
                 turnDOM.addEventListener('click', onClick);
@@ -209,33 +216,36 @@ const ViewManager = (function () {
                 .map(turnToDiv)
                 .forEach(t => turnTypesDOMElement.appendChild(t));
 
-            document.body.appendChild(turnTypesDOMElement);
+            getElementsDOM().appendChild(turnTypesDOMElement);
         }
 
         showTurns();
     }
 
-    const pickAttackableUnit = function (attackableUnits, callback) {
-        const attackableUnitFilter = function (click) {
-            const clickedUnits = attackableUnits
-                .filter(u => u.row === click.y && u.col === click.x);
-
-            return clickedUnits.length !== 0;
-        }
-        const afterClick = function (click) {
-            const clickedUnits = attackableUnits
-                .filter(u => u.row === click.y && u.col === click.x);
-            callback(clickedEnemyUnits[0]);
-            
-            // if (clickedUnits.length !== 0) {
-            //     callback(clickedEnemyUnits[0]);
-            // }
-
-            //onBoardClick(afterClick);
+    const renderAttackableTargets = function (attackableTargets) {
+        const renderAttackableRect = function (target) {
+            debugger;
+            const row = target.row * CONSTANTS.board.cell.height;
+            const col = target.col * CONSTANTS.board.cell.width;
+            const boardValue = Board[target.row][target.col];
+            const text = getText(boardValue);
+            const color = getRectColor(boardValue, row, col);
+            CanvasManager.renderRect(col, row, CONSTANTS.board.cell.width, CONSTANTS.board.cell.height, color, CONSTANTS.board.cell.lineWidth, text, "red");
 
         }
-        debugger;
-        onBoardClick(afterClick, attackableUnitFilter);
+        attackableTargets.forEach(renderAttackableRect);           
+    }
+
+    const showCurrentPlayerName = function (name) {
+        let playerNameDOM = document.getElementById('playerName');
+        if (playerNameDOM !== null) {
+            playerNameDOM.parentNode.removeChild(playerNameDOM);
+        }
+
+        playerNameDOM = document.createElement('div');
+        playerNameDOM.id = 'playerName';
+        playerNameDOM.textContent = `${name} Turn`;
+        getElementsDOM().appendChild(playerNameDOM);
     }
 
     init();
@@ -247,6 +257,7 @@ const ViewManager = (function () {
         renderPick: renderUnitPick,
         pickUnit: unitManager.pickUnit,
         renderTurn,
-        pickAttackableUnit
+        renderAttackableTargets,
+        showCurrentPlayerName
     }
 })();
