@@ -98,5 +98,9 @@ const CONSTANTS = {
     heal: {
         max: 6,
         min: 1
+    },
+    events: {
+        sumPoints: "sumPoints",
+        displayChanges: 'displayChanges'
     }
 }

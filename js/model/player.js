@@ -2,6 +2,8 @@ let Player = function(name, units, boardSide) {
     this.name = name;
     this.units = units;
     this.boardSide = boardSide;
+
+    this.killedUnits = [];
 }
 
 Player.prototype.isAlive = function () {

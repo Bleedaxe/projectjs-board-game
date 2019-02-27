@@ -52,7 +52,7 @@ const Engine = (function () {
             return unit.getMaxHealth() !== unit.health;
         }
 
-        const getMoves = function (unit, enemyPlayer, samePlayerTurn, otherPlayerTurn) {     
+        const getMoves = function (unit, currentPlayer, enemyPlayer, samePlayerTurn, otherPlayerTurn) {     
             const attack = function (afterSuccess) {
                 BoardManager.createBoard(unitManger.getUnits());
                 ViewManager.renderBoard();
@@ -66,12 +66,29 @@ const Engine = (function () {
                 }
 
                 const afterUnitPicking = function (click) {
+                    const checkIsUnitKilled = function (enemyUnit) {
+                        if(enemyUnit.health <= 0) {
+                            enemyPlayer.killedUnits.push(enemyUnit);
+                            PubSub.publish(CONSTANTS.events.displayChanges, {
+                                message: `${enemyPlayer.name}'s ${enemyUnit.type} is killed by ${currentPlayer.name}'s ${unit.type}`
+                            })
+                        }
+                    }
                     afterSuccess();
                     const pickedEnemyUnit = enemyPlayer.getAliveUnits()
                         .filter(u => u.x === click.x && u.y === click.y);
 
                     if (pickedEnemyUnit.length !== 0) {
-                        pickedEnemyUnit[0].receiveDamage(unit.attack);
+                        const damageDealt = pickedEnemyUnit[0].receiveDamage(unit.attack);
+                        //show damage to view
+                        PubSub.publish(CONSTANTS.events.sumPoints, {
+                            name: currentPlayer.name,
+                            points: damageDealt
+                        });
+                        PubSub.publish(CONSTANTS.events.displayChanges, {
+                            message: `${unit.type} dealt ${damageDealt} to ${pickedEnemyUnit[0].type}.`
+                        });
+                        checkIsUnitKilled(pickedEnemyUnit[0]);
                     }
                     else {
                         BoardManager.removeBarrier(click.y, click.x);
@@ -100,6 +117,7 @@ const Engine = (function () {
                     unit.move(click.x, click.y);
                     otherPlayerTurn();
                 }
+
                 const unitRow = unit.y;
                 const unitCol = unit.x;
                 const blocksCount = unit.speed;
@@ -111,14 +129,20 @@ const Engine = (function () {
 
             const heal = function (afterSuccess) {
                 const isSamePlayerTurn = function () {
-                    return Random.getRandom(0, 1) === 0;
+                    return DiceManager.rollDice() % 2 !== 0;
                 }
 
                 const recoveryPoints = Random.getRandom(CONSTANTS.heal.max, CONSTANTS.heal.min);
                 const healedPoints = unit.heal(recoveryPoints);
+                PubSub.publish(CONSTANTS.events.displayChanges, {
+                    message: `${unit.type} healed with ${healedPoints}. Current health - ${unit.health}.`
+                });
                 console.log(healedPoints);
                 afterSuccess(unit.type, healedPoints);
                 if (isSamePlayerTurn()) {
+                    PubSub.publish(CONSTANTS.events.displayChanges, {
+                        message: `It's ${currentPlayer.name} turn again.`
+                    })
                     samePlayerTurn();
                 }
                 else {
@@ -143,7 +167,7 @@ const Engine = (function () {
             const showAvailableTurns = function (unit) {
                 const samePlayerTurn = () => makeTurn(current, enemy);
                 const otherPlayerTurn = () => makeTurn(enemy, current);
-                const moves = getMoves(unit, enemy, samePlayerTurn, otherPlayerTurn);
+                const moves = getMoves(unit, current, enemy, samePlayerTurn, otherPlayerTurn);
 
                 const moveToObject = function (moveType) {
                     return {
@@ -157,6 +181,7 @@ const Engine = (function () {
 
                 ViewManager.renderTurn(turnTypes);
             }
+
             BoardManager.createBoard(unitManger.getUnits());
             ViewManager.renderBoard();
             ViewManager.showCurrentPlayerName(current.name);
@@ -187,8 +212,14 @@ const Engine = (function () {
         }
         makeTurn(playerOne, playerТwo);
     }
+
+    const initEvents = function () {
+        PubSub.subscribe(CONSTANTS.events.sumPoints, PointsManager.set);
+        PubSub.subscribe(CONSTANTS.events.displayChanges, ViewManager.displayTurnOutcome)
+    }
     const run = function (){
         //Show message for starting the game (alert probably)
+        initEvents();
         BoardManager.createBoard();
         ViewManager.renderBoard();
         const playerOne = new Player('player one', createUnits(), CONSTANTS.board.cell.type.playerOne);

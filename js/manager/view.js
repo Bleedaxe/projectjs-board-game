@@ -224,7 +224,6 @@ const ViewManager = (function () {
 
     const renderAttackableTargets = function (attackableTargets) {
         const renderAttackableRect = function (target) {
-            debugger;
             const row = target.row * CONSTANTS.board.cell.height;
             const col = target.col * CONSTANTS.board.cell.width;
             const boardValue = Board[target.row][target.col];
@@ -248,6 +247,10 @@ const ViewManager = (function () {
         getElementsDOM().appendChild(playerNameDOM);
     }
 
+    const displayTurnOutcome = function (params) {
+        alert(params.message);
+    }
+
     init();
 
     return {
@@ -258,6 +261,7 @@ const ViewManager = (function () {
         pickUnit: unitManager.pickUnit,
         renderTurn,
         renderAttackableTargets,
-        showCurrentPlayerName
+        showCurrentPlayerName,
+        displayTurnOutcome
     }
 })();
