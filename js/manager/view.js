@@ -158,9 +158,19 @@ const ViewManager = (function () {
 
                 return unitElement;
             }
+            const appendToDOM = function (unit) {
+                if (counter === CONSTANTS.view.unitsOnRow){
+                    unitElements.appendChild(document.createElement('br'));
+                    counter = 0;
+                }
+                
+                counter++;
+                unitElements.appendChild(unit);
+            }
+            let counter = 0;
             avaibleUnits
                 .map(unitToDiv)
-                .forEach(u => unitElements.appendChild(u));
+                .forEach(appendToDOM);
             
             getElementsDOM().appendChild(unitElements);
         }

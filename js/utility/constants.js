@@ -93,7 +93,8 @@ const CONSTANTS = {
     },
     view: {
         pickUnitId: 'units',
-        turnTypeId: 'turns',
+        turnTypeId: 'turns',    
+        unitsOnRow: 3,
     },
     heal: {
         max: 6,
