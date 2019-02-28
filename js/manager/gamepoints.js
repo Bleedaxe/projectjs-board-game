@@ -4,11 +4,11 @@ const PointsManager = (function (){
         return players.map(p => p.name).indexOf(name);
     }
     const set = function (params) {
-        let index = getPlayerIndexByName(params.playerName);
+        let index = getPlayerIndexByName(params.name);
 
         if (index === -1) {
             let player = {
-                name,
+                name: params.name,
                 points: 0
             };
             index = players.push(player) - 1;
@@ -22,7 +22,7 @@ const PointsManager = (function (){
         if(index === -1)
             throw Error('Player with that name is not found!');
         
-        players[index].points;
+        return players[index].points;
     }
     return {
         set,

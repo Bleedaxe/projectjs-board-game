@@ -1,5 +1,5 @@
 const PubSub = (function () {
-    const events = {};
+    let events = {};
     const publish = function (topic, params) {
         events[topic]
             .forEach(l => l(params));
@@ -12,9 +12,13 @@ const PubSub = (function () {
 
         events[topic].push(listener);
     }
+    const reset = function () {
+        events = {};
+    }
 
     return {
         publish,
-        subscribe
+        subscribe,
+        reset
     }
 })()

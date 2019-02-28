@@ -2,19 +2,28 @@ const Engine = (function () {
     const createUnits = function () {
         const units = [];
         const addUnits = function (action) {
-            for(let i = 0; i < /*CONSTANTS.unitsPerType*/ 1; i++) {
+            for(let i = 0; i < CONSTANTS.unitsPerType; i++) {
                 action();
             }
         }
-        //addUnits(() => units.push(new Knight()));
+        addUnits(() => units.push(new Knight()));
         addUnits(() => units.push(new Elf()));
         addUnits(() => units.push(new Dwarf()));
         return units;
     }
-    const endGame = function (winner, loser) {
-        console.log(winner, loser);
+    const endGame = function (winner, loser, rounds) {
+        alert(`Winner: ${winner.name}`);
+        alert(`Rounds: ${rounds}`);
+        alert(`Opponent's points: ${PointsManager.get(loser.name)}`);
+        const opponentKilledUnits = loser.killedUnits;
+        alert(`Opponent's units:\n${opponentKilledUnits.map(u => `- ${u.type}`).join('\n')}`);
+        const winnerKilledUnits = winner.killedUnits;
+        alert(`Winner's units:\n${winnerKilledUnits.map(u => `- ${u.type}`).join('\n')}`);
+
+        main();
     }
     const play = function (playerOne, playerTwo) {
+        let turns = 0;
         const getAttackableUnits = function (unit, enemyPlayer) {
             var attackableCells = BoardManager.getAttackablePlaces(unit, unit.ignorableCells);
             const availableForAttackUnits = function (unit) {
@@ -80,7 +89,6 @@ const Engine = (function () {
 
                     if (pickedEnemyUnit.length !== 0) {
                         const damageDealt = pickedEnemyUnit[0].receiveDamage(unit.attack);
-                        //show damage to view
                         PubSub.publish(CONSTANTS.events.sumPoints, {
                             name: currentPlayer.name,
                             points: damageDealt
@@ -160,10 +168,10 @@ const Engine = (function () {
         const makeTurn = function (current, enemy) {
             const aliveUnits = current.getAliveUnits();
             if (aliveUnits.length === 0) {
-                endGame(enemy, current);
+                endGame(enemy, current, turns);
                 return;
             }
-
+            turns++;
             const showAvailableTurns = function (unit) {
                 const samePlayerTurn = () => makeTurn(current, enemy);
                 const otherPlayerTurn = () => makeTurn(enemy, current);
@@ -213,13 +221,15 @@ const Engine = (function () {
         makeTurn(playerOne, playerТwo);
     }
 
-    const initEvents = function () {
+    const init = function () {
+        PubSub.reset();
         PubSub.subscribe(CONSTANTS.events.sumPoints, PointsManager.set);
-        PubSub.subscribe(CONSTANTS.events.displayChanges, ViewManager.displayTurnOutcome)
+        PubSub.subscribe(CONSTANTS.events.displayChanges, ViewManager.displayTurnOutcome);
+
+        Board = [];
     }
     const run = function (){
-        //Show message for starting the game (alert probably)
-        initEvents();
+        init();
         BoardManager.createBoard();
         ViewManager.renderBoard();
         const playerOne = new Player('player one', createUnits(), CONSTANTS.board.cell.type.playerOne);
